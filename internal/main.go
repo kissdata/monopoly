@@ -137,6 +137,44 @@ func (me *Player) MovePlayer(stepNumber int, wi *sdl.Window) {
 	wi.UpdateSurface()
 }
 
+func (dice *Dice) Prepare(rend *sdl.Renderer) {
+	dice.SetLogoPath(DiceJPG)
+	diceImg, err := img.Load(dice.GetLogoPath())
+	if err != nil {
+		log.Println("没有骰子图像, 不显示")
+		return
+	}
+	diceImg.SetColorKey(true, sdl.MapRGB(diceImg.Format, 255, 255, 255))
+
+	texture, err := rend.CreateTextureFromSurface(diceImg)
+	if err != nil {
+		log.Println("Failed to create texture, err: ", err)
+		return
+	}
+	defer texture.Destroy()
+
+	// 原图拆分
+	var clips [6]sdl.Rect
+	for i := 0; i < 6; i++ {
+		// x: 42 -112- 56 -112- 56 -112- 42
+		clips[i].X, clips[i].Y = int32(42+(i%3)*168), int32(40+(i/3)*168)
+		clips[i].W, clips[i].H = 112, 112
+	}
+
+	solidArea := &sdl.Rect{X: 260, Y: 150, W: 112, H: 112} // 骰子的固定显示位
+
+	i := 0
+	for i < 6 {
+		rend.Clear()                             // 先清空
+		rend.Copy(texture, &clips[i], solidArea) // 再复制
+		rend.Present()                           // 最后显示
+
+		time.Sleep(1 * time.Duration(time.Second))
+		i++
+	}
+
+}
+
 func AppMain() {
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		log.Panic(err)
@@ -144,6 +182,7 @@ func AppMain() {
 	}
 	defer sdl.Quit()
 
+	HomePage()
 	window, err := sdl.CreateWindow(AppTitle, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		902, // 一行11个方块, 每个宽80, 间距2
 		612, // 一行9 个方块, 每个高66, 间隔2
