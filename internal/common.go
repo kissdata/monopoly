@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,6 +18,7 @@ type Player struct {
 	gender     rune // m/f
 	createDate string
 	Money      int
+	Position   Grid
 
 	logoPath string // logo位置
 }
@@ -27,6 +29,20 @@ func (me *Player) SetLogoPath(jpg string) {
 
 func (me *Player) GetLogoPath() string {
 	return me.logoPath
+}
+
+func (dice *Dice) SetLogoPath(jpg string) {
+	dice.logoPath = filepath.Join(RootDir, jpg)
+}
+
+func (dice *Dice) GetLogoPath() string {
+	return dice.logoPath
+}
+
+func (dice *Dice) Tossing() int {
+	rand.Seed(time.Now().UnixNano())
+	dice.Number = 1 + rand.Intn(6) // [1, 7)
+	return dice.Number
 }
 
 var (
