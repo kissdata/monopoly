@@ -17,12 +17,23 @@ type Player struct {
 	gender     rune // m/f
 	createDate string
 	Money      int
+
+	logoPath string // logo位置
+}
+
+func (me *Player) SetLogoPath(jpg string) {
+	me.logoPath = filepath.Join(RootDir, jpg)
+}
+
+func (me *Player) GetLogoPath() string {
+	return me.logoPath
 }
 
 var (
 	AppTitle   = "大富翁"
 	ConfigPath = "./configs/player.txt" // 以单点开头
 	PlayerLogo = "./internal/assets/tinytiger.jpg"
+	PCroleLogo = "./internal/assets/computer.png"
 	DiceJPG    = "./internal/assets/dice.jpg"
 	Dice2JPG   = "./internal/assets/pickdice.jpg" // 骰子旋转模拟
 
@@ -122,12 +133,14 @@ func PlayerInit() bool {
 	}
 	PlayerA.Money, _ = strconv.Atoi(infoArr[3])
 	log.Printf("player: %+v", PlayerA)
+	PlayerA.SetLogoPath(PlayerLogo)
 
 	// 电脑玩家
 	Computer.createDate = time.Now().Format("2006-01-02")
 	Computer.gender = 'm'
 	Computer.Name = "Robot"
 	Computer.Money = 5000
+	Computer.SetLogoPath(PCroleLogo)
 
 	return true
 }

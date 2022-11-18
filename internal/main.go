@@ -5,7 +5,6 @@ package internal
 
 import (
 	"log"
-	"path/filepath"
 
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
@@ -43,6 +42,26 @@ func DrawBoard(wi *sdl.Window) {
 	wi.UpdateSurface()
 }
 
+// 功能: 玩家放置于起点方格
+func (me *Player) Prepare(wi *sdl.Window) error {
+	playerImg, err := img.Load(me.GetLogoPath())
+	if err != nil {
+		log.Println("角色logo加载失败, error: ", err)
+		return err
+	}
+	defer playerImg.Free()
+
+	surface, _ := wi.GetSurface()
+	playerImg.BlitScaled(nil, surface, &sdl.Rect{X: 21, Y: 21, W: 36, H: 36})
+	wi.UpdateSurface()
+	return nil
+}
+
+// 功能: 移动玩家
+func (me Player) MovePlayer(stepNumber int) {
+
+}
+
 func AppMain() {
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		log.Panic(err)
@@ -62,15 +81,14 @@ func AppMain() {
 
 	DrawBoard(window)
 
-	playerImg, err := img.Load(filepath.Join(RootDir, PlayerLogo))
-	if err != nil {
-		log.Println("角色logo加载失败, error: ", err)
+	// 确认玩家角色能显示
+	err1, err2 := PlayerA.Prepare(window), Computer.Prepare(window)
+	if err1 != nil || err2 != nil {
+		log.Println("assets目录找不到玩家logo, err: ", err1, err2)
 		return
 	}
-	defer playerImg.Free()
-	surface, _ := window.GetSurface()
-	playerImg.BlitScaled(nil, surface, &sdl.Rect{X: 1, Y: 1, W: 50, H: 50})
-	window.UpdateSurface()
+
+	PlayerA.MovePlayer(1)
 
 	running := true
 	for running {
