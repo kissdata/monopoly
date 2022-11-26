@@ -4,7 +4,9 @@ use go-sdl2, which is interoperability between go and SDL(C lib)
 package internal
 
 import (
+	"container/list"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/veandco/go-sdl2/img"
@@ -28,36 +30,57 @@ type Grid struct {
 	Price   int
 }
 
-func DrawBoard(wi *sdl.Window) {
+func DrawBoard(wi *sdl.Window) *list.List {
 	surface, _ := wi.GetSurface()
 	surface.FillRect(nil, 0)
 
-	// 起点方块
-	rect := sdl.Rect{X: 1, Y: 1, W: 80, H: 66}
-	surface.FillRect(&rect, 0xffE9967A)
-	// JAIL
-	rect = sdl.Rect{X: 821, Y: 545, W: 80, H: 66}
-	surface.FillRect(&rect, 0xffF8F8Ff)
+	boardList := list.New()
 
-	for i := 1; i < 11; i++ {
-		rect = sdl.Rect{X: int32(1 + 82*i), Y: int32(1), W: 80, H: 66}
-		surface.FillRect(&rect, 0xffEEE8AA)
+	rand.Seed(time.Now().Unix())
+	for i := 0; i < 38; i++ {
+		grid := Grid{sdl.Rect{}, i, "", true, "",
+			rand.Intn(200)}
 
+		if i == 0 || i == 19 {
+			grid.CanBuy, grid.Price = false, 0 // 起始点和牢房不可购买
+		}
+		// 确认每个方格的位置
+		switch {
+		case i == 0:
+			grid.Rect = sdl.Rect{X: 1, Y: 1, W: 80, H: 66}
+		case i == 19:
+			grid.Rect = sdl.Rect{X: 821, Y: 545, W: 80, H: 66}
+		case i > 0 && i < 11:
+			grid.Rect = sdl.Rect{X: int32(1 + 82*i), Y: int32(1), W: 80, H: 66}
+		case i >= 11 && i < 18:
+			t := i - 10
+			grid.Rect = sdl.Rect{X: 821, Y: int32(1 + 68*t), W: 80, H: 66}
+		case i > 19 && i < 30:
+			t := i - 20
+			grid.Rect = sdl.Rect{X: int32(1 + 82*t), Y: int32(545), W: 80, H: 66}
+		case i >= 30 && i < 37:
+			t := i - 29
+			grid.Rect = sdl.Rect{X: 1, Y: int32(1 + 68*t), W: 80, H: 66}
+		}
+
+		boardList.PushBack(grid)
 	}
-	for i := 1; i < 8; i++ {
-		rect = sdl.Rect{X: 821, Y: int32(1 + 68*i), W: 80, H: 66}
-		surface.FillRect(&rect, 0xffEEE8AA)
-	}
-	for i := 9; i > 0; i-- {
-		rect = sdl.Rect{X: int32(1 + 82*i), Y: int32(545), W: 80, H: 66}
-		surface.FillRect(&rect, 0xffEEE8AA)
-	}
-	for i := 8; i > 0; i-- {
-		rect = sdl.Rect{X: 1, Y: int32(1 + 68*i), W: 80, H: 66}
-		surface.FillRect(&rect, 0xffEEE8AA)
+
+	for e := boardList.Front(); e != nil; e = e.Next() {
+		grid := e.Value.(Grid)
+		p := &grid.Rect
+		if e.Value.(Grid).Id == 0 {
+			surface.FillRect(p, 0xffE9967A) // 起点方块
+		} else if grid.Id == 19 {
+			surface.FillRect(p, 0xffF8F8Ff) // JAIL
+		} else {
+			surface.FillRect(p, 0xffEEE8AA)
+		}
+		log.Println(e.Value)
 	}
 
 	wi.UpdateSurface()
+	return boardList
 }
 
 // 功能: 玩家放置于起点方格
