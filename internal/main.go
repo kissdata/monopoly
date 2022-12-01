@@ -198,12 +198,36 @@ func (dice *Dice) Prepare(rend *sdl.Renderer) {
 
 }
 
+// 随机产生一个数字, 显示对应的点数
+func StopDice(render *sdl.Renderer, dice *Dice) int {
+	number := dice.Tossing()
+	textureDice, _ := img.LoadTexture(render, dice.GetLogoPath())
+
+	var clips [6]sdl.Rect
+	for i := 0; i < 6; i++ {
+		// x: 40 -120- 50 -120- 50 -120- 40
+		clips[i].X, clips[i].Y = int32(40+(i%3)*170), int32(40+(i/3)*170)
+		clips[i].W, clips[i].H = 120, 120
+	}
+
+	solidArea := &sdl.Rect{X: 260, Y: 150, W: 120, H: 120} // 骰子的固定显示位
+
+	render.Copy(textureDice, &clips[number-1], solidArea)
+
+	return number
+}
+
 func AppMain() {
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		log.Panic(err)
 		return
 	}
 	defer sdl.Quit()
+	// 不写的话, 首次加载图像资源会有延迟
+	if err := img.Init(img.INIT_JPG | img.INIT_PNG); err != nil {
+		log.Panic(err)
+	}
+	defer img.Quit()
 
 	HomePage()
 	window, err := sdl.CreateWindow(AppTitle, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
@@ -225,23 +249,36 @@ func AppMain() {
 		return
 	}
 
+	render, _ := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
+	defer render.Destroy()
+
 	var dice Dice
-	for i := 0; i < 20; i++ {
-		PlayerA.MovePlayer(dice.Tossing(), window)
-		time.Sleep(1 * time.Duration(time.Second))
-		Computer.MovePlayer(dice.Tossing(), window)
-		time.Sleep(1 * time.Duration(time.Second))
-	}
+	dice.SetLogoPath(DiceJPG)
 
 	running := true
+	exchange := 1
 	for running {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			switch event.(type) {
+			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				log.Println("Game Over")
 				running = false
-				break
+			case *sdl.MouseButtonEvent:
+				if t.State == sdl.PRESSED {
+					if exchange == 1 {
+						number := StopDice(render, &dice)
+						PlayerA.MovePlayer(number, window)
+						window.UpdateSurface()
+						exchange++
+					} else {
+						number := StopDice(render, &dice)
+						Computer.MovePlayer(number, window)
+						window.UpdateSurface()
+						exchange--
+					}
+				}
 			}
 		}
+		sdl.Delay(500)
 	}
 }
